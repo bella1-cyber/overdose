@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S.R.H.Q - TACTICAL COMMAND CENTER</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Rajdhani:wght@500;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+    :root {
+        --bg-color: #020202;
+        --primary: #d946ef;
+        --primary-dim: rgba(217, 70, 239, 0.15);
+        --alert: #ff2a4d;
+        --safe: #00ff9d;
+        --text: #e0e0e0;
+        --panel: rgba(10, 10, 12, 0.85);
+        --border-color: rgba(217, 70, 239, 0.4);
+        --grid-line: rgba(255, 255, 255, 0.03);
+    }
+
+    * { box-sizing: border-box; }
+    
+    body {
+        margin: 0; padding: 0;
+        background: var(--bg-color);
+        color: var(--text);
+        font-family: 'Rajdhani', 'Noto Sans KR', sans-serif;
+        min-height: 100vh; 
+        overflow-y: auto; 
+        overflow-x: hidden;
+        display: flex; flex-direction: column;
+        user-select: none; -webkit-user-select: none;
+    }
+
+    body.modal-open {
+        overflow: hidden;
+    }
+
+    #bg-layer {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
+        background: 
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+            linear-gradient(var(--grid-line) 1px, transparent 1px),
+            radial-gradient(circle at 50% 50%, rgba(20, 20, 30, 0), #000 90%);
+        background-size: 40px 40px, 40px 40px, 100% 100%;
+        opacity: 0.5;
+    }
+    #map-overlay {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 80vw; height: 80vh; border: 1px solid rgba(255,255,255,0.05); border-radius: 50%;
+        z-index: -1; opacity: 0.2; pointer-events: none;
+        background: repeating-radial-gradient(rgba(217, 70, 239, 0.1) 0, transparent 1px, transparent 50px);
+        animation: mapRotate 60s linear infinite;
+    }
+    @keyframes mapRotate { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+    body::after {
+        content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none; z-index: 9999;
+    }
+
+    .hidden { display: none !important; }
+    .fade-in { animation: fadeIn 0.8s forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .top-ticker {
+        width: 100%; height: 50px;
+        background: #000; border-bottom: 2px solid #333;
+        display: flex; align-items: center; overflow: hidden; position: relative; z-index: 100;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        flex-shrink: 0;
+    }
+    .top-ticker::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: radial-gradient(rgba(255,255,255,0.1) 15%, transparent 20%);
+        background-size: 4px 4px; pointer-events: none; z-index: 5;
+    }
+
+    .ticker-label {
+        background: var(--alert); color: #000; font-weight: 800; padding: 0 20px; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; z-index: 6; min-width: 140px; letter-spacing: 1px;
+        box-shadow: 5px 0 10px rgba(0,0,0,0.5);
+    }
+    .ticker-wrapper {
+        flex: 1; overflow: hidden; position: relative; height: 100%; display: flex; align-items: center;
+        background: rgba(20, 0, 0, 0.3);
+    }
+    .ticker-content {
+        white-space: nowrap; animation: ticker 45s linear infinite; 
+        font-size: 1.2rem; font-family: 'Noto Sans KR', sans-serif; font-weight: bold;
+        padding-left: 20px; display: flex; align-items: center;
+    }
+    
+    .news-item { margin-right: 60px; display: inline-flex; align-items: center; }
+    .news-tag { padding: 2px 8px; border-radius: 4px; margin-right: 10px; font-size: 0.8rem; color: #000; font-weight: bold; }
+    
+    .tag-world { background: #3b82f6; color: #fff; } 
+    .tag-notice { background: var(--safe); color: #000; } 
+    .tag-warn { background: #ff9800; color: #000; } 
+    .tag-danger { background: var(--alert); color: #fff; animation: blink 1s infinite; } 
+    .tag-sys { background: var(--primary); color: #fff; } 
+    .text-highlight { color: #fff; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+    
+    @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-150%); } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .control-bar {
+        width: 100%; 
+        background: rgba(10, 10, 15, 0.95);
+        border-bottom: 1px solid #333; 
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 20px; z-index: 90;
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .system-status { font-size: 0.9rem; color: #666; display: flex; gap: 15px; white-space: nowrap; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--safe); display: inline-block; margin-right: 5px; box-shadow: 0 0 5px var(--safe); }
+    
+    .bgm-controls { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
+    .bgm-label { font-size: 0.8rem; color: var(--primary); margin-right: 10px; font-weight: bold; white-space: nowrap; }
+    .bgm-btn-mini { 
+        background: #111; border: 1px solid #444; color: #888; padding: 4px 12px; cursor: pointer; 
+        font-family: 'Rajdhani'; font-size: 0.8rem; transition: 0.2s; white-space: nowrap;
+    }
+    .bgm-btn-mini:hover, .bgm-btn-mini.active { border-color: var(--primary); color: var(--primary); background: rgba(217, 70, 239, 0.1); }
+
+    #main-dashboard {
+        display: flex; width: 100%; 
+        min-height: calc(100vh - 100px);
+        max-width: 1600px; margin: 0 auto;
+        padding: 20px; gap: 20px; position: relative;
+    }
+    
+    .ops-panel {
+        width: 350px; display: flex; flex-direction: column; gap: 15px; flex-shrink: 0;
+    }
+    .panel-box {
+        background: rgba(0,0,0,0.7); border: 1px solid #333; padding: 15px;
+        position: relative; backdrop-filter: blur(5px);
+    }
+    .panel-title {
+        color: var(--primary); font-size: 0.9rem; border-bottom: 1px solid var(--primary-dim);
+        padding-bottom: 5px; margin-bottom: 10px; display: flex; justify-content: space-between;
+    }
+    
+    .loc-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+    .loc-item {
+        display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #ccc;
+        padding: 8px; border: 1px solid transparent; transition: 0.3s; cursor: pointer;
+    }
+    .loc-item:hover { border-color: var(--primary); background: var(--primary-dim); }
+    .loc-icon { width: 24px; text-align: center; }
+    .loc-status { margin-left: auto; font-size: 0.7rem; padding: 2px 6px; border-radius: 2px; }
+    .st-safe { background: rgba(0,255,157,0.2); color: var(--safe); }
+    .st-danger { background: rgba(255,42,77,0.2); color: var(--alert); }
+    .st-warn { background: rgba(255, 200, 0, 0.2); color: #ffca28; }
+
+    .log-window {
+        height: 200px; overflow: hidden; font-family: monospace; font-size: 0.75rem; color: #666;
+        display: flex; flex-direction: column; justify-content: flex-end;
+        border-top: 1px solid #333; background: #050505; padding: 10px;
+    }
+    .log-line { margin-bottom: 4px; border-left: 2px solid transparent; padding-left: 5px; }
+    .log-line.new { border-left-color: var(--primary); color: #aaa; animation: flash 0.5s; }
+    @keyframes flash { 0% { background: var(--primary); color: #000; } 100% { background: transparent; } }
+
+    .squad-section {
+        flex: 1; display: flex; flex-direction: column;
+    }
+    .grid-header {
+        display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;
+    }
+    .grid-title { font-size: 1.5rem; color: #fff; letter-spacing: 2px; }
+    .grid-sub { color: var(--alert); font-size: 0.9rem; animation: blink 2s infinite; }
+
+    .char-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; 
+    }
+    .char-card {
+        background: #000; border: 1px solid #333; cursor: pointer; position: relative; overflow: hidden;
+        transition: 0.3s; display: flex; flex-direction: column;
+        height: 340px; /* ★★★ 수정됨 ★★★ */
+    }
+    .char-card:hover { border-color: var(--primary); box-shadow: 0 0 20px var(--primary-dim); transform: scale(1.02); z-index: 10; }
+    
+    .card-img-wrap { width: 100%; height: 75%; position: relative; overflow: hidden; }
+    .card-img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); transition: 0.5s; }
+    .char-card:hover .card-img { filter: grayscale(0%); transform: scale(1.1); }
+    
+    .vital-line {
+        position: absolute; bottom: 0; left: 0; width: 100%; height: 20px;
+        background: rgba(0,0,0,0.8); display: flex; align-items: center; padding: 0 5px; gap: 5px;
+    }
+    .ecg { width: 100%; height: 100%; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><path d="M0 10 H20 L25 5 L30 15 L35 10 H100" stroke="%2300ff9d" fill="none" stroke-width="1"/></svg>'); animation: ecgMove 2s linear infinite; }
+    @keyframes ecgMove { from { background-position: 0 0; } to { background-position: -100px 0; } }
+
+    .card-info { padding: 10px; flex: 1; background: linear-gradient(to bottom, #111, #050505); border-top: 1px solid #222; }
+    .card-name { font-size: 1.1rem; color: #fff; font-weight: bold; }
+    .card-role { font-size: 0.75rem; color: var(--primary); }
+    .status-badge { 
+        position: absolute; top: 10px; right: 10px; font-size: 0.6rem; padding: 2px 6px; 
+        background: #000; border: 1px solid var(--safe); color: var(--safe); text-transform: uppercase;
+    }
+    .char-card:hover .status-badge { background: var(--safe); color: #000; }
+
+    .user-card-slot { border-color: var(--primary); background: rgba(217, 70, 239, 0.05); }
+    .user-card-slot .card-img { filter: none; }
+    .user-card-slot .card-name { color: var(--primary); }
+    
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 9000; display: flex; justify-content: center; align-items: center; overflow-y: auto; padding: 20px; }
+    .modal-box { width: 95%; max-width: 1100px; height: auto; max-height: 90vh; background: #080a0c; border: 1px solid var(--primary); display: flex; flex-direction: column; box-shadow: 0 0 50px rgba(217, 70, 239, 0.15); margin: auto; }
+    .modal-header { padding: 20px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; background: rgba(217, 70, 239, 0.05); flex-shrink: 0; }
+    .modal-body { display: flex; flex: 1; overflow-y: auto; min-height: 0; }
+
+    .view-left { width: 40%; padding: 20px; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 15px; }
+    .main-img-view { width: 100%; height: 400px; object-fit: cover; border: 1px solid #444; margin-bottom: 10px; flex-shrink: 0; }
+    .gallery-slots { display: flex; gap: 5px; height: 70px; width: 100%; margin-top: 10px; flex-shrink: 0; }
+    .slot-img { flex: 1; height: 100%; background: #111; border: 1px solid #333; cursor: pointer; overflow: hidden; opacity: 0.6; transition: 0.2s; }
+    .slot-img:hover, .slot-img.active { border-color: var(--primary); opacity: 1; }
+    .slot-img img { width: 100%; height: 100%; object-fit: cover; }
+    .view-right { width: 60%; padding: 30px; overflow-y: auto; }
+    .info-block { margin-bottom: 25px; }
+    .info-label { color: var(--primary); font-size: 0.9rem; margin-bottom: 8px; font-weight: bold; letter-spacing: 1px; }
+    .info-content { color: #ccc; line-height: 1.6; font-size: 1rem; white-space: pre-line; }
+    
+    .voice-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 10px; }
+    .voice-btn { 
+        padding: 10px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 8px; 
+        background: #111; border: 1px solid #333; color: #888; cursor: pointer; transition: 0.2s;
+        text-align: center;
+    }
+    .voice-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .voice-btn.playing { border-color: var(--alert); color: var(--alert); background: rgba(255, 42, 77, 0.1); }
+    .voice-btn[disabled] { cursor: not-allowed; color: #444; border-color: #222; }
+    .voice-btn[disabled]:hover { color: #444; border-color: #222; }
+
+    /* ★★★ 추가된 부분: 스포일러 박스 스타일 ★★★ */
+    .spoiler-box {
+        background: rgba(10, 0, 0, 0.6);
+        border: 1px dashed var(--alert);
+        padding: 20px;
+        cursor: pointer;
+        position: relative;
+        transition: 0.3s;
+        min-height: 120px;
+        display: flex; align-items: center; justify-content: center;
+        text-align: center;
+        overflow: hidden;
+    }
+    .spoiler-box:hover {
+        background: rgba(255, 42, 77, 0.1);
+        box-shadow: 0 0 15px rgba(255, 42, 77, 0.2);
+    }
+    .spoiler-box.revealed {
+        border-style: solid;
+        border-color: #333;
+        background: rgba(0,0,0,0.3);
+        cursor: default;
+        display: block; text-align: left;
+        box-shadow: none;
+    }
+    .spoiler-text {
+        display: none;
+        font-size: 0.95rem; line-height: 1.7; color: #ccc; white-space: pre-line;
+        font-family: 'Noto Sans KR';
+    }
+    .spoiler-warning {
+        color: var(--alert); font-weight: 800; letter-spacing: 2px;
+        animation: blink 1s infinite;
+        font-size: 1rem;
+        text-shadow: 0 0 5px var(--alert);
+        pointer-events: none;
+    }
+    .spoiler-box.revealed .spoiler-text { display: block; animation: fadeIn 0.5s; }
+    .spoiler-box.revealed .spoiler-warning { display: none; }
+    
+    /* ★★★ 추가된 부분: 스토리 내 대사 스타일 ★★★ */
+    .story-quote {
+        font-family: 'Gowun Batang', serif;
+        color: var(--alert);
+        font-size: 1.1rem;
+        margin-bottom: 15px;
+        text-shadow: 0 0 5px rgba(255, 42, 77, 0.5);
+        line-height: 1.6;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 42, 77, 0.2);
+    }
+
+    #start-screen, #story-screen, #bridge-screen, #intro-screen, #scan-screen {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: var(--bg-color); z-index: 3000;
+        overflow-y: auto;
+    }
+    #story-screen { background: black; z-index: 5000; }
+    #bridge-screen { background: #000; z-index: 4500; }
+    #intro-screen { z-index: 4000; }
+    #start-screen { z-index: 10000; background: #020202; }
+    
+    button {
+        background: linear-gradient(90deg, rgba(217, 70, 239, 0.1), transparent);
+        border: 1px solid var(--primary); color: var(--primary);
+        padding: 12px 30px; font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 1rem;
+        cursor: pointer; transition: 0.3s; text-transform: uppercase; letter-spacing: 2px;
+        clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+    }
+    button:hover { background: var(--primary); color: #fff; box-shadow: 0 0 25px var(--primary-dim); }
+    input {
+        background: rgba(0,0,0,0.6); border: 1px solid #444; color: var(--primary);
+        padding: 15px; font-size: 1.2rem; text-align: center; width: 100%; outline: none;
+        font-family: 'Rajdhani', sans-serif; transition: 0.3s; margin-bottom: 10px;
+    }
+    .avatar-selection { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
+    .avatar-opt { width: 120px; height: 120px; border: 2px solid #333; background: #000; cursor: pointer; opacity: 0.5; transition: 0.3s; position: relative; }
+    .avatar-opt img { width: 100%; height: 100%; object-fit: cover; }
+    .avatar-opt.active { border-color: var(--primary); opacity: 1; box-shadow: 0 0 20px var(--primary-dim); transform: scale(1.05); }
+    .avatar-label { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); color: white; font-size: 0.8rem; text-align: center; padding: 2px 0; }
+    
+    .hand-container {
+        width: 60vw; height: 60vw; max-width: 400px; max-height: 400px;
+        border: 1px solid rgba(217, 70, 239, 0.2); border-radius: 50%;
+        position: relative; display: flex; justify-content: center; align-items: center;
+        margin: 30px 0; cursor: pointer; 
+        background: radial-gradient(circle, rgba(217, 70, 239, 0.05), transparent 70%);
+        -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: none;
+    }
+    .hand-img { width: 60%; opacity: 0.3; filter: invert(1); transition: 0.3s; pointer-events: none; }
+    .scanning .hand-img { opacity: 1; filter: invert(1) sepia(1) saturate(5) hue-rotate(240deg) drop-shadow(0 0 20px var(--primary)); }
+    .radar-sweep {
+        position: absolute; width: 100%; height: 100%; border-radius: 50%;
+        background: conic-gradient(from 0deg, transparent 0%, rgba(217, 70, 239, 0.5) 20%, transparent 40%);
+        animation: radar 1.5s infinite linear; display: none;
+    }
+    @keyframes radar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+    .user-profile-box {
+        max-width: 600px; height: auto; padding: 30px; text-align: center; position: relative;
+    }
+    .user-data-row {
+        background: rgba(255,255,255,0.05); padding: 15px; margin: 10px 0; border-left: 3px solid var(--primary); text-align: left;
+    }
+    .data-label { color: #888; font-size: 0.8rem; display: block; margin-bottom: 5px; }
+    .data-val { color: #fff; font-size: 1.1rem; font-weight: bold; }
+    .action-btn-group { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+    .btn-alert { border-color: var(--alert); color: var(--alert); }
+    .btn-alert:hover { background: var(--alert); color: #000; box-shadow: 0 0 20px var(--alert); }
+
+    .emergency-state { animation: redAlert 1s infinite; }
+    .emergency-state::before {
+        content: "EMERGENCY"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg);
+        font-size: 10vw; color: rgba(255,0,0,0.1); font-weight: 900; z-index: 1; pointer-events: none;
+    }
+    @keyframes redAlert { 
+        0%, 100% { box-shadow: inset 0 0 0 0 transparent; } 
+        50% { box-shadow: inset 0 0 100px rgba(255,0,0,0.5); } 
+    }
+
+    .mission-modal-box { max-width: 800px; height: auto; border-color: var(--alert); background: #0a0000; }
+    .mission-char-img { width: 150px; height: 150px; border-radius: 50%; border: 3px solid var(--alert); object-fit: cover; margin: 0 auto 20px; }
+    .mission-dialogue { font-family: 'Gowun Batang'; font-size: 1.5rem; color: #fff; margin: 20px 0; line-height: 1.6; }
+
+    #image-popup {
+        display: flex; justify-content: center; align-items: center;
+    }
+    #image-popup img {
+        max-width: 90%; max-height: 90%; object-fit: contain; border: 2px solid var(--primary);
+    }
+    #image-popup .close-btn, #voice-popup .close-btn, #location-modal .modal-box button {
+        position: absolute; top: 20px; right: 20px; padding: 10px 20px; z-index: 10;
+    }
+    #location-modal .modal-box button {
+        position: static; margin-top: 20px;
+    }
+
+    #voice-popup .modal-box {
+        max-width: 600px; padding: 40px; text-align: center; border-color: var(--alert);
+    }
+    #voice-popup-text {
+        font-family: 'Gowun Batang'; font-size: 1.5rem; color: #fff; margin: 20px 0; line-height: 1.6;
+    }
+    #voice-popup-waveform {
+        display: flex; justify-content: center; align-items: center; height: 50px; gap: 4px;
+        margin: 30px 0;
+    }
+
+    @media (max-width: 1024px) {
+        #main-dashboard { flex-direction: column; height: auto; overflow: visible; padding-bottom: 50px; }
+        .ops-panel { width: 100%; }
+        .char-grid { grid-template-columns: repeat(2, 1fr); height: auto; }
+        .char-card { height: 250px; }
+        .top-ticker { height: 40px; }
+        .ticker-label { font-size: 0.8rem; padding: 0 10px; min-width: auto; }
+        .ticker-content { font-size: 0.9rem; }
+        .news-item { margin-right: 30px; }
+        .control-bar { padding: 10px; flex-direction: column; align-items: flex-start; height: auto; }
+        .system-status { display: none; }
+        .bgm-controls { width: 100%; overflow-x: auto; padding-bottom: 5px; justify-content: flex-start; }
+        
+        .modal-body { flex-direction: column; }
+        .view-left, .view-right { width: 100%; border: none; height: auto; overflow-y: visible; }
+    }
+    
+    @media (max-width: 480px) {
+        .user-profile-box .action-btn-group {
+            flex-direction: column;
+        }
+    }
+
+    .story-img-container {
+        position: relative; overflow: hidden;
+        width:100%; height:60vh; border:1px solid #333; margin-bottom:20px;
+        background-color: #000;
+    }
+    .story-img-container > img {
+        width: 100%; height: 100%; object-fit: cover;
+        animation: main-img-shake 4s infinite linear;
+    }
+    .story-img-container::after {
+        content: ''; position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0.5px, rgba(255,255,255,0.1) 1px, rgba(0,0,0,0.2) 2px);
+        opacity: 0;
+        animation: glitch-noise 2s infinite steps(1);
+    }
+    .story-img-container::before {
+        content: ''; position: absolute; top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-image: var(--glitch-image);
+        background-size: cover; background-position: center;
+        animation: glitch-slice 2s infinite steps(1);
+    }
+    @keyframes main-img-shake {
+        0%, 100% { transform: translate(0, 0); } 25% { transform: translate(0.5px, -0.5px); } 50% { transform: translate(-0.5px, 0.5px); } 75% { transform: translate(0.5px, 0.5px); }
+    }
+    @keyframes glitch-noise {
+        0% { opacity: 0; } 95% { opacity: 0.5; top: -5px; } 96% { opacity: 0.2; top: 5px; } 97% { opacity: 0.8; top: -2px; } 98% { opacity: 0.3; top: 2px; } 99% { opacity: 0.6; top: 0; } 100% { opacity: 0; }
+    }
+    @keyframes glitch-slice {
+        0% { clip-path: inset(0); transform: translate(0, 0); opacity: 0; } 97% { clip-path: inset(50% 0 20% 0); transform: translate(-5px, 2px); opacity: 1; } 98% { clip-path: inset(10% 0 60% 0); transform: translate(5px, -2px); opacity: 1; } 99% { clip-path: inset(30% 0 40% 0); transform: translate(2px, 1px); opacity: 1; } 100% { clip-path: inset(0); transform: translate(0, 0); opacity: 0; }
+    }
+
+    #voice-waveform {
+        display: flex; align-items: center; height: 12px; gap: 2px;
+    }
+    .wave-bar {
+        width: 3px; height: 100%; background: var(--primary);
+        animation: waveAnimate 1.2s infinite ease-in-out;
+    }
+    .wave-bar:nth-child(2) { animation-delay: -1.0s; } .wave-bar:nth-child(3) { animation-delay: -0.8s; } .wave-bar:nth-child(4) { animation-delay: -0.6s; } .wave-bar:nth-child(5) { animation-delay: -0.4s; }
+    @keyframes waveAnimate { 0%, 40%, 100% { transform: scaleY(0.2); } 20% { transform: scaleY(1.0); } }
+    </style>
+</head>
+<body>
+
+    <div id="bg-layer"></div>
+    <div id="map-overlay"></div>
+
+    <audio id="bgm-player" loop></audio>
+    <audio id="sfx-hover" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/sfx_hover.mp3"></audio>
+    <audio id="sfx-click" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/sfx_click.mp3"></audio>
+    <audio id="sfx-type" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/sfx_type.mp3"></audio>
+    <audio id="sfx-scan" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/sfx_scan.mp3"></audio>
+    <audio id="sfx-access" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/sfx_access.mp3"></audio>
+    <audio id="sfx-alarm" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/sfx_alarm.mp3" loop></audio>
+    
+    <audio id="narr-player"></audio>
+    <audio id="voice-player"></audio>
+
+    <div class="top-ticker">
+        <div class="ticker-label">BREAKING NEWS</div>
+        <div class="ticker-wrapper">
+            <div class="ticker-content">
+                <span class="news-item"><span class="news-tag tag-world">WORLD</span><span class="text-highlight">2026년 도쿄 신주쿠 대재해 10주기 추모식 예정</span></span>
+                <span class="news-item"><span class="news-tag tag-notice">NOTICE</span><span class="text-highlight">전 센티넬/가이드 정기 등록 기간 (마감 임박)</span></span>
+                <span class="news-item"><span class="news-tag tag-danger">WARNING</span><span class="text-highlight">시부야 13구역 이형체 반응 급증, 접근 금지 구역 설정</span></span>
+                <span class="news-item"><span class="news-tag tag-warn">BLACK LABEL</span><span class="text-highlight">제0기동부대 작전 구역 내 민간인 즉시 대피령 발령</span></span>
+                <span class="news-item"><span class="news-tag tag-sys">SYSTEM</span><span class="text-highlight">특대본 메인 서버 보안 패치 완료 (Ver 4.0.2)</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-bar hidden" id="control-bar">
+        <div class="system-status">
+            <span><span class="status-dot"></span>SERVER: ONLINE</span>
+            <span><span class="status-dot"></span>DEFCON: 4</span>
+        </div>
+        <div class="bgm-controls" id="bgm-controls">
+            <span class="bgm-label">♬ AUDIO CONTROL</span>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <div style="text-align:center;">
+            <div style="font-size:5rem; font-weight:800; color:var(--primary); letter-spacing:10px; text-shadow:2px 2px 0 var(--alert);">S.R.H.Q</div>
+            <p style="color:#666; letter-spacing:3px;">SPECIAL RESPONSE HEADQUARTERS</p>
+            <div style="width:300px; height:4px; background:#111; margin:30px auto; position:relative;">
+                <div id="boot-bar" style="height:100%; background:var(--primary); width:0%; transition:width 0.1s;"></div>
+            </div>
+            <div id="start-btn-group" class="hidden fade-in">
+                <button id="btn-init">SYSTEM CONNECT</button>
+                <p id="earphone-notice" style="color:#888; font-size:0.8rem; margin-top:20px; font-family: 'Noto Sans KR', sans-serif;">음성과 BGM이 포함되어 있습니다. 이어폰/헤드폰 사용을 권장합니다.</p>
+            </div>
+            <p id="boot-text" style="color:#444; font-family:monospace; font-size:0.8rem; margin-top:10px;">INITIALIZING...</p>
+        </div>
+    </div>
+
+    <div id="story-screen" class="hidden">
+        <div style="position:relative; max-width:1000px; width:100%; padding:20px;">
+            <div class="story-img-container">
+                <img id="story-img" src="">
+            </div>
+            <div id="story-text" style="font-family:'Gowun Batang'; font-size:1.4rem; color:#eee; background:rgba(0,0,0,0.6); padding:30px; text-align:center; min-height:120px; border-top:1px solid rgba(217,70,239,0.3); border-bottom:1px solid rgba(217,70,239,0.3);"></div>
+        </div>
+        <button id="skip-btn" style="position:absolute; bottom:30px; right:30px; font-size:0.8rem; padding:10px 20px;">SKIP >></button>
+    </div>
+
+    <div id="bridge-screen" class="hidden">
+        <div style="font-size:2rem; color:var(--primary); letter-spacing:5px; animation:blink 0.5s infinite;">CONNECTING...</div>
+    </div>
+
+    <div id="intro-screen" class="hidden">
+        <div style="width:90%; max-width:800px; padding:40px; background:rgba(18,12,22,0.9); border:1px solid var(--border-color); position:relative; margin-bottom:40px;">
+            <div style="position:absolute; top:-14px; left:20px; background:#050505; color:var(--primary); border:1px solid var(--primary); padding:0 10px; font-size:0.8rem; display:flex; align-items:center; gap:8px;">
+                <span>COMMUNICATION CHANNEL: OPEN</span>
+                <div id="voice-waveform" class="hidden">
+                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                </div>
+            </div>
+            <div id="msg-content" style="font-family:'Gowun Batang'; font-size:1.3rem; line-height:1.8;"></div>
+        </div>
+        <div id="input-area" class="hidden fade-in" style="width:100%; max-width:500px;">
+            <div class="avatar-selection">
+                <div class="avatar-opt" onclick="selectAvatar('남성', 'https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769351421144_01.jpeg', this)">
+                    <img src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769351421144_01.jpeg">
+                    <div class="avatar-label">MALE</div>
+                </div>
+                <div class="avatar-opt" onclick="selectAvatar('여성', 'https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769351557630_01.jpeg', this)">
+                    <img src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769351557630_01.jpeg">
+                    <div class="avatar-label">FEMALE</div>
+                </div>
+            </div>
+            <input type="text" id="user-name" placeholder="CODE NAME" autocomplete="off">
+            <input type="number" id="user-age" placeholder="AGE" autocomplete="off">
+            <div style="display:flex; gap:10px;">
+                <button style="flex:1" onclick="submitForm('SENTINEL')">SENTINEL</button>
+                <button style="flex:1" onclick="submitForm('GUIDE')">GUIDE</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scan-screen" class="hidden">
+        <h2 style="color:var(--primary); letter-spacing:5px;">BIOMETRIC SCAN</h2>
+        <div class="hand-container" id="hand-scanner">
+            <div class="radar-sweep" id="radar"></div>
+            <img src="https://pub-7c1beb3ad40844ff87d9eb2fad52b153.r2.dev/hand.png" class="hand-img">
+        </div>
+        <p id="scan-status" style="color:#666; font-family:monospace;">HOLD TO SCAN</p>
+    </div>
+    
+    <div id="result-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="height:auto; max-width:500px; padding:40px; text-align:center;">
+            <h3 style="color:var(--primary);">ANALYSIS COMPLETE</h3>
+            <div id="result-rank" style="font-size:6rem; font-weight:800; color:var(--alert); margin:20px 0;">?</div>
+            <p id="result-ability" style="font-size:1.2rem; font-weight:bold; color:white;"></p>
+            <button onclick="enterDashboard()" style="margin-top:30px;">ACCESS DATABASE</button>
+        </div>
+    </div>
+
+    <div id="main-dashboard" class="hidden">
+        
+        <div class="ops-panel">
+            <div class="panel-box">
+                <div class="panel-title">
+                    <span>ARCHIVED FOOTAGE</span>
+                    <span style="font-size:0.7rem;">CLASSIFIED</span>
+                </div>
+                <div id="youtube-embed-container" style="aspect-ratio: 16 / 9; width: 100%; background: #000;">
+                    <iframe width="100%" height="100%" src="https://www.youtube.com/embed/3d2yctBopxU?si=tUt8sPAom12NYz_A" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-title">
+                    <span>TACTICAL MAP</span>
+                    <span style="font-size:0.7rem;">TOKYO, 2026</span>
+                </div>
+                <ul class="loc-list">
+                    <li class="loc-item" data-title="이치가야 (HQ / ARK)" data-desc="특대본 본부 및 지하 숙소 '아크(Ark)'. 모든 작전의 심장부 역할을 하는 중추 시설.">
+                        <span class="loc-icon">🏢</span><span>이치가야 (HQ / ARK)</span><span class="loc-status st-safe">SAFE</span>
+                    </li>
+                    <li class="loc-item" data-title="신주쿠 (Ground Zero)" data-desc="10년 전 '신주쿠 대재해'의 원점. 게이트의 잔재가 남아있는 최고 위험 구역으로, 민간인 출입이 엄격히 통제된다.">
+                        <span class="loc-icon">⚠️</span><span>신주쿠 (Ground Zero)</span><span class="loc-status st-danger">DANGER</span>
+                    </li>
+                    <li class="loc-item" data-title="시부야 (Operation Zone)" data-desc="이형체가 가장 빈번하게 출몰하는 주요 작전 구역. 상시 교전이 발생하며, '블랙 라벨'의 주 활동 무대이다.">
+                        <span class="loc-icon">🏙️</span><span>시부야 (Operation Zone)</span><span class="loc-status st-warn">WARN</span>
+                    </li>
+                    <li class="loc-item" data-title="오다이바 (Isolation)" data-desc="인공섬에 위치한 특수 격리 및 훈련 시설. 통제가 어려운 고위험군 센티넬을 격리하거나 특수 훈련을 진행하는 곳이다.">
+                        <span class="loc-icon">🔬</span><span>오다이바 (Isolation)</span><span class="loc-status st-warn">RESTRICT</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-title">
+                    <span>REGULATIONS</span>
+                    <span style="color:var(--alert);">MANDATORY</span>
+                </div>
+                <div style="font-size:0.8rem; color:#aaa; line-height:1.5;">
+                    <p><strong>[제0기동부대 수칙]</strong></p>
+                    <p>1. 통제용 초커 상시 착용.<br>
+                    2. 민간인 피해 발생 시 즉시 징계.<br>
+                       - 등급 강등 및 가이딩 배급 제한.<br>
+                    3. 명령 불복종 시 강제 진정제 투여.</p>
+                </div>
+            </div>
+
+            <div class="panel-box" style="flex:1; display:flex; flex-direction:column;">
+                <div class="panel-title">SYSTEM LOGS</div>
+                <div id="sys-log" class="log-window"></div>
+            </div>
+        </div>
+
+        <div class="squad-section">
+            <div class="grid-header">
+                <div>
+                    <div class="grid-title">BLACK LABEL SQUAD</div>
+                    <div style="font-size:0.8rem; color:#666;">SPECIAL FORCES UNIT 0</div>
+                </div>
+                <div class="grid-sub">● LIVE FEED CONNECTED</div>
+            </div>
+            <div class="char-grid" id="char-grid">
+            </div>
+        </div>
+    </div>
+
+    <div id="detail-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <h2 id="dt-name" style="margin:0; color:white;">NAME</h2>
+                    <span id="dt-role" style="color:var(--alert); font-weight:bold;">ROLE</span>
+                </div>
+                <button onclick="closeDetail()" style="padding:5px 15px;">CLOSE X</button>
+            </div>
+            <div class="modal-body">
+                <div class="view-left">
+                    <img id="dt-main-img" src="" class="main-img-view">
+                    
+                    <div class="info-block">
+                        <div class="info-label">GALLERY</div>
+                        <div class="gallery-slots" id="dt-gallery"></div>
+                    </div>
+                    
+                    <div class="info-block">
+                        <div class="info-label">VOICE RECORDS</div>
+                        <div class="voice-slots" id="dt-voices"></div>
+                    </div>
+                </div>
+                <div class="view-right">
+                    <div class="info-block"><div class="info-label">PROFILE</div><div id="dt-profile" class="info-content"></div></div>
+                    <div class="info-block"><div class="info-label">PERSONALITY</div><div id="dt-pers" class="info-content"></div></div>
+                    <div class="info-block"><div class="info-label">ABILITY</div><div id="dt-ability" class="info-content" style="color:var(--primary);"></div></div>
+                    <div class="info-block"><div class="info-label">TMI</div><div id="dt-tmi" class="info-content" style="font-size:0.9rem; color:#aaa;"></div></div>
+                    
+                    <div class="info-block">
+                        <div class="info-label">BACKGROUND STORY</div>
+                        <div id="dt-story" class="spoiler-box">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="user-profile-modal" class="modal-overlay hidden">
+        <div class="modal-box user-profile-box">
+            <div style="font-size:1.5rem; color:var(--primary); margin-bottom:20px;">PERSONNEL FILE</div>
+            <img id="user-p-img" src="" style="width:120px; height:120px; border-radius:50%; margin:0 auto; border:2px solid #fff;">
+            <div style="margin-top:20px;">
+                <div class="user-data-row"><span class="data-label">CODE NAME</span><span class="data-val" id="user-p-name"></span></div>
+                <div class="user-data-row"><span class="data-label">RANK & CLASS</span><span class="data-val" id="user-p-role"></span></div>
+                <div class="user-data-row"><span class="data-label">SPECIAL ABILITY</span><span class="data-val" id="user-p-ability"></span></div>
+            </div>
+            <div class="action-btn-group">
+                <button onclick="copyUserInfo()">📋 DATA COPY</button>
+                <button onclick="requestDeployment()" class="btn-alert">🚨 REQUEST DEPLOYMENT</button>
+            </div>
+            <button onclick="closeUserProfile()" style="margin-top:10px; border:none; background:transparent; font-size:0.8rem; color:#666;">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="mission-modal" class="modal-overlay hidden" style="z-index:9999;">
+        <div class="modal-box mission-modal-box" style="text-align:center; padding:40px;">
+            <h2 style="color:var(--alert); font-size:2rem; animation:blink 0.5s infinite;">⚠️ URGENT MISSION ⚠️</h2>
+            <img id="mission-char-img" class="mission-char-img" src="">
+            <div style="color:var(--primary); font-weight:bold; font-size:1.2rem;" id="mission-char-name">CHARACTER NAME</div>
+            <div id="mission-dialogue" class="mission-dialogue">"대사 내용이 들어갑니다."</div>
+            <button onclick="acceptMission()" class="btn-alert" style="font-size:1.2rem; padding:15px 40px;">MISSION ACCEPT</button>
+        </div>
+    </div>
+
+    <div id="image-popup" class="modal-overlay hidden" onclick="closeImagePopup()">
+        <img id="popup-image-content" src="">
+        <button class="close-btn" onclick="closeImagePopup()">CLOSE X</button>
+    </div>
+
+    <div id="voice-popup" class="modal-overlay hidden">
+        <div class="modal-box">
+             <p id="voice-popup-text"></p>
+             <div id="voice-popup-waveform">
+                 <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+             </div>
+             <button class="close-btn" onclick="closeVoicePopup()">CLOSE X</button>
+        </div>
+    </div>
+
+    <div id="location-modal" class="modal-overlay hidden">
+        <div class="modal-box" style="max-width: 500px; padding: 30px; text-align: center;">
+            <h3 id="loc-modal-title" style="color:var(--primary); margin-bottom: 20px;">LOCATION INFO</h3>
+            <p id="loc-modal-desc" style="color:#ccc; line-height:1.6; font-family: 'Noto Sans KR';"></p>
+            <button onclick="closeLocationModal()">CLOSE</button>
+        </div>
+    </div>
+
+
+    <script>
+        const characters = [
+            { 
+                id: 'ren', name: "키사라기 렌", role: "SS Class Sentinel", 
+                thumb: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769152937486_01.jpeg", 
+                profile: "27세 · 남성 · ENTP \n외형: 187cm 은백발, 푸른 눈동자. 전술 고글과 방독면 착용.", 
+                pers: "능글맞은 츤데레. 인간 불신이 깊으며 타인과 거리를 둔다.", 
+                ability: "[물질 붕괴] 시야 내 모든 물질을 분자 단위로 분해/재구성", 
+                tmi: "Like: 단것(당고), 길고양이 / Hate: 쓴 커피, 위선자 / 🔒", 
+                story: `“더러운 것들은 전부 부숴버리면 그만이야. 너도, 이 썩어빠진 세상도.”\n\n뒷골목의 쓰레기 더미 속에서 태어나, 힘이 없다는 이유만으로 짓밟히던 어린 시절은 끝났다. 각성과 함께 손에 쥔 것은 세상 모든 물질을 먼지로 되돌리는 파괴의 힘. 그토록 갈망하던 힘을 얻었으나, 돌아오는 것은 '괴물'을 향한 공포와 위선적인 찬사뿐이었다.\n\n사람을 믿느니 길가의 고양이를 믿겠다며 마음의 문을 닫아건 채, 그는 오늘도 달콤한 사탕으로 입안의 쓴맛을 지운다. 하지만 고글 너머의 시선은 자꾸만, 유일하게 계산 없이 다가오는 누군가에게 머물기 시작했다.`,
+                images: [
+                    "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769152937486_01.jpeg",
+                    "https://via.placeholder.com/400/111/fff?text=REN_2",
+                    "https://via.placeholder.com/400/111/fff?text=REN_3",
+                    "https://via.placeholder.com/400/111/fff?text=REN_4",
+                    "https://via.placeholder.com/400/111/fff?text=REN_5"
+                ],
+                voices: [
+                    { line: "「야, 함부로 만지지 마. …손가락 끝부터 재로 만들어 줄 테니까, 쓰레기 녀석아.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/r1.mp3" },
+                    { line: "「아, 젠장. 머리가 깨질 것 같아…. 야, 딸기 우유 내놔. 당장 가져오라고, 이 쓸모없는 놈아!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/r2.mp3" },
+                    { line: "「하아… 꼴이 엉망이잖아. …착각하지 마. 네가 죽으면 뒷맛이 더러울 뿐이니까, 멍청아.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/r3.wav" },
+                    { line: "「하? 뭐야 그 실실 쪼개는 낯짝은. …읏, 놀리지 말라고! 분해되기 싫으면, 냉큼 입 다물어!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/r4.mp3" },
+                    { line: "「…칫, 기어이 말하게 시키냐. 나의 『달링』이 돼도 좋은 건, 네녀석뿐이다. …거부권 따윈 없다고?」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/r5.mp3" }
+                ],
+                missionLine: "「하아... 귀찮게 됐네. 네가 필요해. 멍하니 있지 말고 따라와.」" 
+            },
+            { 
+                id: 'tatsuya', name: "쿠로키 타츠야", role: "S Class Sentinel", 
+                thumb: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769157789986_01.jpeg", 
+                profile: "28세 · 남성 · ISTJ \n외형: 185cm 흑발, 회색 눈. 각 잡힌 군제복.", 
+                pers: "극도의 과묵함. 당신의 소꿉친구이자 잃어버린 첫사랑.", 
+                ability: "[그림자 조작] 그림자 무기화, 은신, 이동", 
+                tmi: "Like: 규율, 서예 / Hate: 소란, 매운 것 / 🔒", 
+                story: `“말은 필요 없습니다. 내 그림자가 당신의 방패가 될 테니.”\n\n지키고 싶었던 소중한 사람을 잃은 날, 소년의 시간은 멈췄다. 닿지 못한 첫사랑은 깊은 죄책감이 되었고, 그는 속죄하듯 자신을 극한으로 몰아붙이며 감정을 죽였다. 그림자 속에 숨어 오직 임무와 규율만을 따르는 기계가 되기를 자처했던 남자.\n\n기적처럼 다시 만난 '당신' 앞에서, 억눌러왔던 갈증은 걷잡을 수 없이 터져 나온다. 이번에야말로 절대 놓치지 않겠다는 듯, 그의 그림자는 어느 때보다 짙고 거대하게 당신의 발밑을 지키고 있다.`,
+                images: Array(5).fill("https://via.placeholder.com/400/222/fff?text=TATSUYA"), 
+                voices: [
+                    { line: "「목표 확인. …그림자에 수장시킨다.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/t1.mp3" },
+                    { line: "「내 뒤에 있어. …두 번 다시, 잃을 수는 없어.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/t2.mp3" },
+                    { line: "「라져. 즉시 수행한다.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/t3.mp3" },
+                    { line: "「단추가 느슨해졌군. …이리 줘, 내가 고치지.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/t4.mp3" },
+                    { line: "「그림자처럼, 계속 곁에 있겠다. …네가, 나의 빛이니까.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/t5.mp3" }
+                ], 
+                missionLine: "「전방에 적 다수 확인. 지원이 필요하다. ...내 등 뒤는 너에게 맡기지.」" 
+            },
+            { 
+                id: 'leo', name: "아카기 레오", role: "A+ Class Sentinel", 
+                thumb: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769158086663_01.jpeg", 
+                profile: "28세 · 남성 · ESFP \n외형: 188cm 붉은 올백머리, 금안. 스카잔 착용.", 
+                pers: "단세포 본능파. 전직 폭주족 총장. 싸움과 고기 외엔 관심 없다.", 
+                ability: "[푸른 화염] 제어 불가능한 고열의 푸른 불꽃", 
+                tmi: "Like: 야키니쿠, 바이크 / Hate: 채소, 유령 / 🔒", 
+                story: `“복잡한 건 딱 질색이야. 화끈하게 전부 태워버리고 고기나 먹으러 가자고!”\n\n오사카의 밤거리를 지배하던 폭주족 총장, 붉은 머리의 야수가 전장을 달린다. 그에게 세상은 복잡한 논리가 아닌, '내 편'과 '적'으로 나뉘는 단순한 곳이다. 제어할 수 없을 만큼 뜨거운 푸른 화염은 닿는 모든 것을 재로 만들지만, 그만큼 순수한 열정이기도 하다.\n\n머리 쓰는 일은 질색이라며 투덜대면서도, 한번 인정한 상대에게는 뒤도 돌아보지 않고 등을 맡긴다. 굉음과 열기, 그리고 피 냄새가 진동하는 전장은 이제 그가 마음껏 날뛸 수 있는 유일한 놀이터가 되었다.`,
+                images: Array(5).fill("https://via.placeholder.com/400/311/fff?text=LEO"), 
+                voices: [
+                    { line: "「아 씨, 몰라! 복잡한 얘기는 치아라! 누굴 조지면 되는 건데, 어?!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/l11.mp3" },
+                    { line: "「욕봤다! 일 끝나면 고기 묵으러 가자! 오늘은 이 형님이 쏜다!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/l2.mp3" },
+                    { line: "「니, 깡다구 하나는 직이네! 내 마음에 쏙 들었다!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/l3.wav" },
+                    { line: "「내 파란 불꽃은 마이 뜨겁다! 화상 입는 정도로 안 끝날 끼다!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/l4.mp3" },
+                    { line: "「니 얼굴만 보믄, 오토바이보다 심장 엔진 소리가 더 요란하다 안 카나! …확 내 깔 해라, 마!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/l5.mp3" }
+                ], 
+                missionLine: "「오! 드디어 몸 좀 푸는 거냐? 어이! 늦으면 두고 간다? 꽉 잡아!!」" 
+            },
+            { 
+                id: 'kei', name: "미나미 케이", role: "S Class Sentinel (Admin)", 
+                thumb: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769158477048_01.jpeg", 
+                profile: "39세 · 남성 · INFJ \n외형: 183cm 흑발, 실눈(개안 시 녹안). 수트 착용.", 
+                pers: "온화한 가면 뒤의 냉혈한.", 
+                ability: "[구속의 사슬] 공간에서 쇠사슬 소환, 구속 및 절단", 
+                tmi: "Like: 다림질, 홍차 / Hate: 술, 무례함 / 🔒", 
+                story: `“걱정 말아요. 모든 건 제 통제 하에 있으니까... 차 한 잔 드시겠습니까?”\n\n온화한 미소, 완벽한 매너, 흐트러짐 없는 수트 핏. 그는 누구에게나 친절한 관리관이지만, 그 미소는 철저하게 계산된 가면일 뿐이다. 이형체에게 사랑하는 아내와 아이들을 잃고 세상이 무너져 내린 그날, 그는 스스로의 감정에 '구속의 사슬'을 채웠다.\n\n매일 밤 습관처럼 죽은 가족을 위한 4인분의 요리를 만들고 홀로 식탁에 앉는 남자. 다정한 눈웃음 뒤에는 세상을 향한 끔찍한 증오와, 언젠가 맞이할 파국을 기다리는 서늘한 절망이 도사리고 있다.`,
+                images: Array(5).fill("https://via.placeholder.com/400/020/fff?text=KEI"), 
+                voices: [
+                    { line: "「날뛰지 말아 주세요. 금방 편하게 해 드릴 테니까.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/k1.mp3" },
+                    { line: "「…비효율적이군요. 계획대로 움직여 주시겠습니까?」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/k2.mp3" },
+                    { line: "「이런, 다친 곳은 없나요? …후후, 걱정이 많아서 미안합니다.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/k3.mp3" },
+                    { line: "「제 허용 범위를 넘지 마세요. …부숴버리고 싶어지거든요.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/k4.mp3" },
+                    { line: "「차라리, 어디에도 못 가게 사슬로 묶어두고 싶네요. …후후, 농담입니다.」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/k5.mp3" }
+                ], 
+                missionLine: "「상황이 좋지 않군요. 당신의 능력이 절실합니다. 부디, 저를 도와주시겠습니까?」" 
+            },
+            { 
+                id: 'izumi', name: "호시노 이즈미", role: "A+ Class Sentinel", 
+                thumb: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/1769159689233_01.jpeg", 
+                profile: "23세 · 남성 · ESTP \n외형: 190cm 진분홍 펌, 연두색 눈. 헤드셋 착용.", 
+                pers: "통제불능 폭파광. 전장을 놀이터로 생각하는 비글미 넘치는 문제아.", 
+                ability: "[블래스트 & 아스널] 손에 쥔 무기 화력 극대화", 
+                tmi: "Like: 고카페인, 폭발음 / Hate: 정적 / 🔒", 
+                story: `“아하하! 빵빵 터져라! 여기가 내 무대고, 저 놈들이 폭죽이야!”\n\n통제 불능, 구제 불능. 모든 교육 기관에서 퇴출당한 문제아에게 블랙 라벨은 천국이었다. 남들에게는 공포인 전장의 포화가 그에게는 신나는 리듬 게임의 비트와도 같다. 거대한 미니건 '캔디'를 껴안고 광기 어린 웃음을 터트릴 때, 그는 비로소 살아있음을 느낀다.\n\n시끄러운 폭발음 속에서만 안정을 찾는 모순적인 소년. 하지만 광란의 전투가 끝나고 헤드셋을 눌러 썼을 때, 그 안에서 흘러나오는 곡은 의외로 잔잔한 피아노 선율이다.`,
+                images: Array(5).fill("https://via.placeholder.com/400/202/fff?text=IZUMI"), 
+                voices: [
+                    { line: "「봐봐! 내 '캔디' 짱, 완전 귀엽지?」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/i1.mp3" },
+                    { line: "「아~ 심심해서 죽을 것 같아~. 저기, 폭파해도 돼? …되지?」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/i2.mp3" },
+                    { line: "「리로드 완료! 자, 벌집이 되어버려라! 아하하하!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/i3.mp3" },
+                    { line: "「게임 오버! 유감이네, 너의 패배야! 바이바~이!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/i4.mp3" },
+                    { line: "「있지, 폭탄 카운트다운보다, 너를 보고 있는 게 더 두근거려! …나랑 '위험한 짓' 해보지 않을래?」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/i5.mp3" }
+                ], 
+                missionLine: "「야호!! 폭죽놀이 시간이다!! 형씨! 나랑 같이 싹 다 날려버리러 가자고!!」" 
+            }
+        ];
+        const audioSrc = { story: ["https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(8).WAV", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(2).WAV", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(3).WAV", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(4).WAV", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(9).WAV"], renIntro: ["https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(1).WAV", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(6).WAV", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/0125(7).WAV"], bgmList: [{ title: "BGM 01", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/tokyo.wav" }, { title: "BGM 02", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/tokyo%20(1).wav" }, { title: "BGM 03", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/tokyo%20(2).wav" }] };
+        const storyImg = ["https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/d1.jpeg", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/d2.jpeg", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/d3.jpeg", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/d4.jpeg", "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/d5.jpeg"];
+        const storyText = ["10년 전, 일본 상공에 거대한 차원 균열 '게이트'가 열렸다.", "균열에서 쏟아져 나온 이형체들은\n순식간에 도시를 불바다로 만들었다.", "인류는 대항하기 위해 초능력자 '센티넬'을 각성시켰고...", "정부는 이들을 통제하기 위해\n'특이 현상 대책 본부'를 설립했다.", "그리고 이곳, 가장 위험한 임무를 수행하는\n통제 불능의 부대 '블랙 라벨'이 있다."];
+
+        const sfx = { 
+            hover: document.getElementById('sfx-hover'), 
+            click: document.getElementById('sfx-click'), 
+            type: document.getElementById('sfx-type'), 
+            scan: document.getElementById('sfx-scan'), 
+            access: document.getElementById('sfx-access'), 
+            alarm: document.getElementById('sfx-alarm') 
+        };
+        const narr = document.getElementById('narr-player');
+        const bgm = document.getElementById('bgm-player');
+        const voicePlayer = document.getElementById('voice-player');
+        let userData = {};
+        
+        let isAudioUnlocked = false;
+
+        const bootBar = document.getElementById('boot-bar');
+        const bootText = document.getElementById('boot-text');
+        let bootVal = 0;
+        const bootInterval = setInterval(() => {
+            bootVal += Math.random() * 5; if(bootVal > 100) bootVal = 100;
+            bootBar.style.width = bootVal + '%';
+            bootText.innerText = `LOADING CORE MODULES... ${Math.floor(bootVal)}%`;
+            if(bootVal === 100) { clearInterval(bootInterval); bootText.innerText = "SYSTEM READY"; document.getElementById('start-btn-group').classList.remove('hidden'); }
+        }, 80);
+
+        function unlockAudioContext() {
+            if (isAudioUnlocked) return;
+            Object.values(sfx).forEach(sound => {
+                sound.volume = 0;
+                sound.play().catch(()=>{});
+                sound.pause();
+                sound.currentTime = 0;
+                sound.volume = 1;
+            });
+            isAudioUnlocked = true;
+            console.log("Audio Context Unlocked.");
+        }
+        
+        function playSound(soundKey, options = {}) {
+            if (!isAudioUnlocked || !sfx[soundKey]) return;
+            const sound = sfx[soundKey];
+            sound.loop = options.loop || false;
+            sound.volume = options.volume || 1.0;
+            sound.currentTime = 0;
+            sound.play().catch(e => console.error(`Error playing ${soundKey}:`, e));
+        }
+        
+        function stopSound(soundKey) {
+            if (!sfx[soundKey]) return;
+            sfx[soundKey].pause();
+            sfx[soundKey].currentTime = 0;
+        }
+
+        document.getElementById('btn-init').addEventListener('click', () => { 
+            unlockAudioContext();
+            playSound('click');
+            document.getElementById('start-screen').style.display = 'none'; 
+            playBGM(0); 
+            playStory(); 
+        });
+
+        let skipStory = false;
+        async function playStory() {
+            const screen = document.getElementById('story-screen');
+            const imgEl = document.getElementById('story-img');
+            const imgContainer = imgEl.parentElement;
+            const txt = document.getElementById('story-text');
+            const skipBtn = document.getElementById('skip-btn');
+            screen.classList.remove('hidden');
+            skipStory = false;
+            skipBtn.onclick = () => { 
+                playSound('click');
+                skipStory = true; 
+                narr.pause(); 
+                screen.classList.add('hidden'); 
+                runIntro(); 
+            };
+            for (let i = 0; i < storyText.length; i++) {
+                if(skipStory) break;
+                imgEl.src = storyImg[i];
+                imgContainer.style.setProperty('--glitch-image', `url(${storyImg[i]})`);
+                txt.innerText = storyText[i];
+                narr.src = audioSrc.story[i];
+                narr.play().catch(()=>{});
+                await new Promise(resolve => {
+                    narr.onended = resolve;
+                    const checkSkip = setInterval(() => { if(skipStory){ clearInterval(checkSkip); resolve(); } }, 100);
+                });
+                if(skipStory) break;
+                await new Promise(r => setTimeout(r, 500));
+            }
+            if(!skipStory) { screen.classList.add('hidden'); runIntro(); }
+        }
+
+        async function runIntro() {
+            const bridge = document.getElementById('bridge-screen');
+            bridge.classList.remove('hidden');
+            await new Promise(r => setTimeout(r, 2000));
+            bridge.classList.add('hidden');
+            document.getElementById('intro-screen').classList.remove('hidden');
+            const boxContent = document.getElementById('msg-content');
+            const waveform = document.getElementById('voice-waveform');
+            waveform.classList.remove('hidden');
+            narr.src = audioSrc.renIntro[0]; narr.play().catch(()=>{});
+            await typeText(boxContent, "렌｜「어이, 정신 좀 차리시지. 이런 데서 넋 놓고 있지 말라고, 멍청아.」");
+            await new Promise(r => narr.onended = r);
+            narr.src = audioSrc.renIntro[1]; narr.play().catch(()=>{});
+            await typeText(boxContent, "렌｜「여기는 '특대본'이야. ……뭐, 기껏해야 지옥 입구라고 부르는 게 어울리는 곳이지만 말이야.」");
+            await new Promise(r => narr.onended = r);
+            narr.src = audioSrc.renIntro[2]; narr.play().catch(()=>{});
+            boxContent.innerHTML = "렌｜「너도 '각성자'지?…… 자, 빨리 이름이나 대시지. 쓰레기들 리스트에 올려줄 테니까.」";
+            
+            setTimeout(() => {
+                document.getElementById('input-area').classList.remove('hidden');
+                applyHoverSound(document.querySelectorAll('.avatar-opt, button'));
+                setTimeout(() => {
+                    waveform.classList.add('hidden');
+                }, 1500);
+            }, 500);
+        }
+
+        async function typeText(target, text) {
+            target.innerHTML = ''; 
+            for(let char of text) { 
+                target.innerHTML += char; 
+                playSound('type', {volume: 0.5});
+                await new Promise(r=>setTimeout(r, (char === '\n' ? 400 : 40))); 
+            }
+        }
+
+        function selectAvatar(gender, url, el) { 
+            userData.gender = gender; 
+            userData.avatar = url; 
+            document.querySelectorAll('.avatar-opt').forEach(opt => opt.classList.remove('active')); 
+            el.classList.add('active'); 
+            playSound('click');
+        }
+        function submitForm(role) {
+            playSound('click');
+            const name = document.getElementById('user-name').value;
+            const age = document.getElementById('user-age').value;
+            if(!userData.gender) return alert("아바타를 선택해주세요.");
+            if(!name || !age) return alert("이름과 나이를 입력해주세요.");
+            userData.name = name; userData.age = age; userData.role = role;
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('scan-screen').classList.remove('hidden');
+        }
+
+        const scanner = document.getElementById('hand-scanner');
+        let scanTimer, scanVal = 0;
+        scanner.addEventListener('mousedown', (e) => { e.preventDefault(); startScan(); });
+        scanner.addEventListener('mouseup', endScan);
+        scanner.addEventListener('mouseleave', endScan);
+        scanner.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); startScan(); }, { passive: false });
+        scanner.addEventListener('touchend', (e) => { e.preventDefault(); endScan(); });
+        scanner.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); return false; };
+
+        function startScan() {
+            if(scanner.classList.contains('scanning')) return;
+            playSound('scan', {loop: true});
+            scanner.classList.add('scanning');
+            document.getElementById('radar').style.display = 'block';
+            document.getElementById('scan-status').innerText = "ANALYZING BIOMETRICS...";
+            document.getElementById('scan-status').style.color = "var(--primary)";
+            scanTimer = setInterval(() => { scanVal += 2; if(scanVal >= 100) completeScan(); }, 50);
+        }
+        function endScan() {
+            if(scanVal < 100) { clearInterval(scanTimer); scanVal = 0; stopSound('scan'); scanner.classList.remove('scanning'); document.getElementById('radar').style.display = 'none'; document.getElementById('scan-status').innerText = "SCAN ABORTED"; document.getElementById('scan-status').style.color = "var(--alert)"; }
+        }
+        function completeScan() {
+            clearInterval(scanTimer); 
+            stopSound('scan');
+            playSound('access');
+            const ranks = ["SS", "S", "A", "B"];
+            userData.rank = ranks[Math.floor(Math.random()*ranks.length)];
+            userData.ability = userData.role === 'GUIDE' ? "가이딩 (Guiding)" : ["염동력", "순간이동", "정신감응", "신체강화"].sort(()=>0.5-Math.random())[0];
+            document.getElementById('result-rank').innerText = userData.rank;
+            document.getElementById('result-ability').innerText = userData.ability;
+            document.getElementById('result-modal').classList.remove('hidden');
+            document.body.classList.add('modal-open');
+            applyHoverSound(document.querySelectorAll('#result-modal button'));
+        }
+        function enterDashboard() { 
+            playSound('click');
+            document.getElementById('result-modal').classList.add('hidden');
+            document.body.classList.remove('modal-open');
+            document.getElementById('scan-screen').classList.add('hidden'); 
+            document.getElementById('main-dashboard').classList.remove('hidden'); 
+            document.getElementById('control-bar').classList.remove('hidden'); 
+            initDashboard(); 
+        }
+        function initDashboard() {
+            const grid = document.getElementById('char-grid');
+            characters.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'char-card'; card.onclick = () => openDetail(c);
+                card.innerHTML = `<div class="card-img-wrap"><img src="${c.thumb}" class="card-img"><div class="vital-line"><div class="ecg"></div></div><div class="status-badge">ON MISSION</div></div><div class="card-info"><div class="card-name">${c.name}</div><div class="card-role">${c.role}</div></div>`;
+                grid.appendChild(card);
+            });
+            const userCard = document.createElement('div');
+            userCard.className = 'char-card user-card-slot';
+            userCard.innerHTML = `<div class="card-img-wrap"><img src="${userData.avatar}" class="card-img"><div class="vital-line"><div class="ecg" style="filter:hue-rotate(90deg);"></div></div><div class="status-badge" style="border-color:var(--primary); color:var(--primary);">CONNECTED</div></div><div class="card-info"><div class="card-name">${userData.name}</div><div class="card-role">${userData.rank} Class ${userData.role}</div></div>`;
+            userCard.onclick = () => openUserProfile();
+            grid.appendChild(userCard);
+            renderBGMControls();
+            startSystemLogs();
+
+            document.querySelectorAll('.loc-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const title = item.dataset.title;
+                    const desc = item.dataset.desc;
+                    openLocationModal(title, desc);
+                });
+            });
+
+            applyHoverSound(document.querySelectorAll('.char-card, .loc-item'));
+        }
+        function renderBGMControls() {
+            const con = document.getElementById('bgm-controls');
+            audioSrc.bgmList.forEach((b, i) => { const btn = document.createElement('div'); btn.className = 'bgm-btn-mini'; btn.innerText = `TRACK 0${i+1}`; btn.onclick = () => playBGM(i); con.appendChild(btn); });
+            const stop = document.createElement('div'); stop.className = 'bgm-btn-mini'; stop.innerText = "STOP"; stop.style.color = "var(--alert)"; stop.onclick = () => { playSound('click'); bgm.pause(); document.querySelectorAll('.bgm-btn-mini').forEach(b=>b.classList.remove('active')); }; con.appendChild(stop);
+            applyHoverSound(document.querySelectorAll('.bgm-btn-mini'));
+        }
+        function playBGM(idx) {
+            playSound('click');
+            bgm.src = audioSrc.bgmList[idx].url; bgm.volume = 0.4; bgm.play().catch(()=>{});
+            document.querySelectorAll('.bgm-btn-mini').forEach(b=>b.classList.remove('active'));
+            const btns = document.getElementById('bgm-controls').children;
+            if(btns[idx+1]) btns[idx+1].classList.add('active');
+        }
+        function startSystemLogs() {
+            const logBox = document.getElementById('sys-log');
+            const messages = ["[SYSTEM] Scanning sector 4...", "[NET] Data packet received.", "[WARN] Anomaly detected in Shinjuku.", "[SYNC] Ren Kisaragi: Vital Stable.", "[SYNC] Tatsuya Kuroki: BPM 72.", "[SEC] Firewall updated.", "[REQ] Guiding request from Team 0.", "[LOG] Access granted to Archive.", "Downloading tactical map..."];
+            setInterval(() => { const msg = messages[Math.floor(Math.random()*messages.length)]; const line = document.createElement('div'); line.className = 'log-line new'; line.innerText = `> ${msg}`; logBox.appendChild(line); logBox.scrollTop = logBox.scrollHeight; if(logBox.children.length > 10) logBox.removeChild(logBox.firstChild); }, 2000);
+        }
+        
+        function openDetail(c) {
+            playSound('click');
+            document.body.classList.add('modal-open');
+            document.getElementById('detail-modal').classList.remove('hidden');
+            
+            document.getElementById('dt-name').innerText = c.name;
+            document.getElementById('dt-role').innerText = c.role;
+            document.getElementById('dt-main-img').src = c.thumb;
+            
+            const gallery = document.getElementById('dt-gallery');
+            gallery.innerHTML = '';
+            c.images.forEach((src) => { 
+                const d = document.createElement('div'); 
+                d.className = 'slot-img'; 
+                d.innerHTML = `<img src="${src}">`; 
+                d.onclick = (e) => { e.stopPropagation(); openImagePopup(src); }
+                gallery.appendChild(d); 
+            });
+            
+            const voices = document.getElementById('dt-voices');
+            voices.innerHTML = '';
+            if (c.voices && c.voices.length > 0) {
+                c.voices.forEach((v, i) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'voice-btn';
+                    btn.innerHTML = `&#9654; VOICE ${String(i+1).padStart(2,'0')}`;
+                    if (v.url) {
+                        btn.onclick = () => playVoice(v.line, v.url);
+                    } else {
+                        btn.disabled = true;
+                    }
+                    voices.appendChild(btn);
+                });
+            } else {
+                voices.innerHTML = `<span style="font-size:0.8rem; color:#666;">No voice data.</span>`;
+            }
+
+            document.getElementById('dt-profile').innerText = c.profile;
+            document.getElementById('dt-pers').innerText = c.pers;
+            document.getElementById('dt-ability').innerText = c.ability;
+            document.getElementById('dt-tmi').innerText = c.tmi;
+
+            // ★★★ 수정됨: 스토리 스포일러 처리 로직 ★★★
+            const storyBox = document.getElementById('dt-story');
+            storyBox.classList.remove('revealed');
+            const storyParts = c.story.split('\n\n');
+            const storyQuote = storyParts.length > 1 ? storyParts[0] : '';
+            const storyDesc = storyParts.length > 1 ? storyParts.slice(1).join('\n\n') : c.story;
+            
+            storyBox.innerHTML = `
+                <div class="spoiler-warning">⚠️ CLASSIFIED DATA - CLICK TO DECRYPT ⚠️</div>
+                <div class="spoiler-text">
+                    <p class="story-quote">${storyQuote}</p>
+                    <p>${storyDesc}</p>
+                </div>
+            `;
+            storyBox.onclick = function() {
+                if(!this.classList.contains('revealed')) {
+                    this.classList.add('revealed');
+                    playSound('access');
+                }
+            };
+
+            applyHoverSound(document.querySelectorAll('#detail-modal .slot-img, #detail-modal .voice-btn, #detail-modal button'));
+        }
+
+        function closeDetail() { 
+            playSound('click');
+            document.body.classList.remove('modal-open');
+            document.getElementById('detail-modal').classList.add('hidden'); 
+        }
+        function openUserProfile() { 
+            playSound('click');
+            document.body.classList.add('modal-open');
+            document.getElementById('user-profile-modal').classList.remove('hidden'); 
+            document.getElementById('user-p-img').src = userData.avatar; 
+            document.getElementById('user-p-name').innerText = userData.name; 
+            document.getElementById('user-p-role').innerText = `${userData.rank} Class ${userData.role}`; 
+            document.getElementById('user-p-ability').innerText = userData.ability; 
+            applyHoverSound(document.querySelectorAll('#user-profile-modal button'));
+        }
+        function closeUserProfile() { 
+            playSound('click');
+            document.body.classList.remove('modal-open');
+            document.getElementById('user-profile-modal').classList.add('hidden'); 
+        }
+        
+        // ★★★ 수정됨: 클립보드 복사 내용 변경 ★★★
+        function copyUserInfo() { 
+            playSound('click');
+            const guidelines = `★나레이션/대사 출력 법칙 (절대 준수)★
+-서술/행동/나레이션: text
+-모든 등장인물(ⓤ는 제외)의 대사는 반드시 아래 형식을 따른다.
+-형식: 
+이름｜"일본어" 
+「자연스러운 한국어(표준어) 번역」
+※번역 예외: 레오→경상도 사투리 / "おやおや" → 이런, 저런, 호오? (절대 "어머어머" X)`;
+
+            const userInfo = `#${userData.name}
+-나이: ${userData.age}
+-성별: ${userData.gender}
+-센티넬/가이드: ${userData.role}
+-능력: ${userData.ability}
+-특이사항:`;
+            const textToCopy = `${guidelines}\n\n${userInfo}`;
+
+            navigator.clipboard.writeText(textToCopy).then(() => { 
+                alert("지침 및 ID CARD 정보가 클립보드에 복사되었습니다."); 
+            }); 
+        }
+
+        function requestDeployment() { 
+            playSound('click');
+            closeUserProfile(); 
+            alert("긴급 출동 요청이 전송되었습니다.\n응답 대기 중..."); 
+            setTimeout(() => { 
+                triggerEmergencyEvent(); 
+            }, 5000); 
+        }
+        
+        function triggerEmergencyEvent() {
+            playSound('alarm', {loop: true});
+            document.body.classList.add('emergency-state');
+            document.body.classList.add('modal-open');
+            const randomChar = characters[Math.floor(Math.random() * characters.length)];
+            const modal = document.getElementById('mission-modal');
+            document.getElementById('mission-char-img').src = randomChar.thumb;
+            document.getElementById('mission-char-name').innerText = randomChar.name;
+            document.getElementById('mission-dialogue').innerText = randomChar.missionLine;
+            modal.classList.remove('hidden');
+            applyHoverSound(document.querySelectorAll('#mission-modal button'));
+        }
+        function acceptMission() { 
+            stopSound('alarm');
+            playSound('access');
+            alert("미션 수락 확인. 현장으로 이동합니다."); 
+            window.location.reload(); 
+        }
+
+        function openImagePopup(src) {
+            playSound('click');
+            document.getElementById('popup-image-content').src = src;
+            document.getElementById('image-popup').classList.remove('hidden');
+            applyHoverSound(document.querySelectorAll('#image-popup button'));
+        }
+        function closeImagePopup() {
+             playSound('click');
+             document.getElementById('image-popup').classList.add('hidden');
+        }
+        function playVoice(line, url) {
+            playSound('click');
+            document.getElementById('voice-popup-text').innerText = line;
+            voicePlayer.src = url;
+            voicePlayer.play().catch(()=>{});
+            document.getElementById('voice-popup').classList.remove('hidden');
+            applyHoverSound(document.querySelectorAll('#voice-popup button'));
+        }
+        function closeVoicePopup() {
+            voicePlayer.pause();
+            voicePlayer.currentTime = 0;
+            document.getElementById('voice-popup').classList.add('hidden');
+        }
+        voicePlayer.onended = closeVoicePopup;
+
+        function openLocationModal(title, desc) {
+            playSound('click');
+            document.body.classList.add('modal-open');
+            document.getElementById('loc-modal-title').innerText = title;
+            document.getElementById('loc-modal-desc').innerText = desc;
+            document.getElementById('location-modal').classList.remove('hidden');
+            applyHoverSound(document.querySelectorAll('#location-modal button'));
+        }
+        function closeLocationModal() {
+            playSound('click');
+            document.body.classList.remove('modal-open');
+            document.getElementById('location-modal').classList.add('hidden');
+        }
+
+        function applyHoverSound(elements) {
+            elements.forEach(el => {
+                if (el.dataset.hoverSoundApplied) return;
+                el.addEventListener('mouseover', () => {
+                    playSound('hover', {volume: 0.5});
+                });
+                el.dataset.hoverSoundApplied = 'true';
+            });
+        }
+
+        applyHoverSound(document.querySelectorAll('#start-screen button, #story-screen button'));
+    </script>
+</body>
+</html>
