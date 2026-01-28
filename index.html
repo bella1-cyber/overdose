@@ -447,6 +447,18 @@
         to { transform: rotate(360deg); }
     }
 
+    /* ★★★ 추가된 부분: 하단 저작권 푸터 스타일 ★★★ */
+    footer {
+        width: 100%;
+        max-width: 1600px;
+        margin: 40px auto 0;
+        padding: 20px;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #666;
+        border-top: 1px solid #333;
+    }
+
 
     @media (max-width: 1024px) {
         #main-dashboard { flex-direction: column; height: auto; overflow: visible; padding-bottom: 50px; }
@@ -715,6 +727,11 @@
         </div>
     </div>
 
+    <!-- ★★★ 추가된 부분: 하단 저작권 푸터 ★★★ -->
+    <footer class="hidden" id="main-footer">
+        © 2026 S.R.H.Q. All Rights Reserved. This is a fictional website created for creative purposes.
+    </footer>
+
     <div id="detail-modal" class="modal-overlay hidden">
         <div class="modal-box">
             <div class="modal-header">
@@ -727,11 +744,6 @@
             <div class="modal-body">
                 <div class="view-left">
                     <img id="dt-main-img" src="" class="main-img-view">
-                    
-                    <div class="info-block">
-                        <div class="info-label">GALLERY</div>
-                        <div class="gallery-slots" id="dt-gallery"></div>
-                    </div>
                     
                     <div class="info-block">
                         <div class="info-label">VOICE RECORDS</div>
@@ -1097,6 +1109,7 @@
             document.getElementById('scan-screen').classList.add('hidden'); 
             document.getElementById('main-dashboard').classList.remove('hidden'); 
             document.getElementById('control-bar').classList.remove('hidden'); 
+            document.getElementById('main-footer').classList.remove('hidden'); 
             initDashboard(); 
         }
         function initDashboard() {
@@ -1153,16 +1166,6 @@
             document.getElementById('dt-role').innerText = c.role;
             document.getElementById('dt-main-img').src = c.thumb;
             
-            const gallery = document.getElementById('dt-gallery');
-            gallery.innerHTML = '';
-            c.images.forEach((src) => { 
-                const d = document.createElement('div'); 
-                d.className = 'slot-img'; 
-                d.innerHTML = `<img src="${src}">`; 
-                d.onclick = (e) => { e.stopPropagation(); openImagePopup(src); }
-                gallery.appendChild(d); 
-            });
-            
             const voices = document.getElementById('dt-voices');
             voices.innerHTML = '';
             if (c.voices && c.voices.length > 0) {
@@ -1206,7 +1209,7 @@
                 }
             };
 
-            applyHoverSound(document.querySelectorAll('#detail-modal .slot-img, #detail-modal .voice-btn, #detail-modal button'));
+            applyHoverSound(document.querySelectorAll('#detail-modal .voice-btn, #detail-modal button'));
         }
 
         function closeDetail() { 
@@ -1278,7 +1281,7 @@
             stopSound('alarm');
             playSound('access');
             alert("미션 수락 확인. 현장으로 이동합니다."); 
-            window.location.reload(); 
+            window.location.href = 'https://share.crack.wrtn.ai/lwjkge'; 
         }
 
         function openImagePopup(src) {
@@ -1334,4 +1337,3 @@
     </script>
 </body>
 </html>
-
