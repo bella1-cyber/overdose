@@ -195,10 +195,10 @@
     .grid-sub { color: var(--alert); font-size: 0.9rem; animation: blink 2s infinite; }
 
     .char-grid {
-        display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 반응형 그리드 */
-        gap: 15px; 
-    }
+    display: grid; 
+    grid-template-columns: repeat(6, 1fr); /* 6개의 열로 고정 */
+    gap: 15px; 
+}
     .char-card {
         background: #000; border: 1px solid #333; cursor: pointer; position: relative; overflow: hidden;
         transition: 0.3s; display: flex; flex-direction: column;
@@ -1334,3 +1334,4 @@
     </script>
 </body>
 </html>
+
