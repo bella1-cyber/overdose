@@ -129,20 +129,33 @@
         font-family: 'Rajdhani'; font-size: 0.8rem; transition: 0.2s; white-space: nowrap;
     }
     .bgm-btn-mini:hover, .bgm-btn-mini.active { border-color: var(--primary); color: var(--primary); background: rgba(217, 70, 239, 0.1); }
-
+    
+    /* ★★★ 변경된 부분: 대시보드 레이아웃 ★★★ */
     #main-dashboard {
-        display: flex; width: 100%; 
-        min-height: calc(100vh - 100px);
-        max-width: 1600px; margin: 0 auto;
-        padding: 20px; gap: 20px; position: relative;
+        display: flex; 
+        flex-direction: column; /* 세로 정렬로 변경 */
+        width: 100%; 
+        max-width: 1600px; 
+        margin: 0 auto;
+        padding: 20px; 
+        gap: 20px; 
+        position: relative;
     }
     
+    /* ★★★ 변경된 부분: 상단 가로 패널 스타일 ★★★ */
     .ops-panel {
-        width: 350px; display: flex; flex-direction: column; gap: 15px; flex-shrink: 0;
+        width: 100%; /* 너비를 100%로 변경 */
+        display: flex; /* 내부 아이템을 가로로 배치 */
+        flex-wrap: wrap; /* 화면이 작아지면 줄바꿈 */
+        gap: 15px; 
+        flex-shrink: 0;
     }
+
     .panel-box {
         background: rgba(0,0,0,0.7); border: 1px solid #333; padding: 15px;
         position: relative; backdrop-filter: blur(5px);
+        flex: 1 1 300px; /* 패널 아이템이 유연하게 크기 조절되도록 설정 */
+        min-height: 200px;
     }
     .panel-title {
         color: var(--primary); font-size: 0.9rem; border-bottom: 1px solid var(--primary-dim);
@@ -165,13 +178,15 @@
         height: 200px; overflow: hidden; font-family: monospace; font-size: 0.75rem; color: #666;
         display: flex; flex-direction: column; justify-content: flex-end;
         border-top: 1px solid #333; background: #050505; padding: 10px;
+        flex-grow: 1; /* ★★★ 추가됨: 남은 공간 채우기 */
     }
     .log-line { margin-bottom: 4px; border-left: 2px solid transparent; padding-left: 5px; }
     .log-line.new { border-left-color: var(--primary); color: #aaa; animation: flash 0.5s; }
     @keyframes flash { 0% { background: var(--primary); color: #000; } 100% { background: transparent; } }
 
     .squad-section {
-        flex: 1; display: flex; flex-direction: column;
+        width: 100%; /* 너비를 100%로 변경 */
+        display: flex; flex-direction: column;
     }
     .grid-header {
         display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;
@@ -180,12 +195,14 @@
     .grid-sub { color: var(--alert); font-size: 0.9rem; animation: blink 2s infinite; }
 
     .char-grid {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* 반응형 그리드 */
+        gap: 15px; 
     }
     .char-card {
         background: #000; border: 1px solid #333; cursor: pointer; position: relative; overflow: hidden;
         transition: 0.3s; display: flex; flex-direction: column;
-        height: 340px; /* ★★★ 수정됨 ★★★ */
+        height: 340px;
     }
     .char-card:hover { border-color: var(--primary); box-shadow: 0 0 20px var(--primary-dim); transform: scale(1.02); z-index: 10; }
     
@@ -240,7 +257,6 @@
     .voice-btn[disabled] { cursor: not-allowed; color: #444; border-color: #222; }
     .voice-btn[disabled]:hover { color: #444; border-color: #222; }
 
-    /* ★★★ 추가된 부분: 스포일러 박스 스타일 ★★★ */
     .spoiler-box {
         background: rgba(10, 0, 0, 0.6);
         border: 1px dashed var(--alert);
@@ -280,7 +296,6 @@
     .spoiler-box.revealed .spoiler-text { display: block; animation: fadeIn 0.5s; }
     .spoiler-box.revealed .spoiler-warning { display: none; }
     
-    /* ★★★ 추가된 부분: 스토리 내 대사 스타일 ★★★ */
     .story-quote {
         font-family: 'Gowun Batang', serif;
         color: var(--alert);
@@ -292,7 +307,16 @@
         border-bottom: 1px solid rgba(255, 42, 77, 0.2);
     }
 
-    #start-screen, #story-screen, #bridge-screen, #intro-screen, #scan-screen {
+    /* ★★★ 변경된 부분: 진입 화면 스타일 ★★★ */
+    #start-screen {
+        position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.pexels.com/photos/2246476/pexels-photo-2246476.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1') no-repeat center center;
+        background-size: cover;
+        z-index: 10000;
+        overflow-y: auto;
+    }
+
+    #story-screen, #bridge-screen, #intro-screen, #scan-screen {
         position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
         background: var(--bg-color); z-index: 3000;
         overflow-y: auto;
@@ -300,8 +324,7 @@
     #story-screen { background: black; z-index: 5000; }
     #bridge-screen { background: #000; z-index: 4500; }
     #intro-screen { z-index: 4000; }
-    #start-screen { z-index: 10000; background: #020202; }
-    
+
     button {
         background: linear-gradient(90deg, rgba(217, 70, 239, 0.1), transparent);
         border: 1px solid var(--primary); color: var(--primary);
@@ -388,9 +411,46 @@
         margin: 30px 0;
     }
 
+    /* ★★★ 추가된 부분: 지도 및 레이더 스타일 ★★★ */
+    #tactical-map-section {
+        width: 100%;
+        margin-top: 20px;
+    }
+    #tactical-map-container {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9; /* 지도의 가로세로 비율 */
+        background: #000;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+    #custom-map-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .radar-sweep-effect {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: conic-gradient(
+            from 0deg, 
+            transparent 0%, 
+            rgba(0, 255, 157, 0.3) 10%, 
+            transparent 20%
+        );
+        animation: radar-sweep-animation 4s linear infinite;
+        mix-blend-mode: screen; /* 레이더 효과가 더 잘 보이도록 블렌드 모드 적용 */
+    }
+    @keyframes radar-sweep-animation {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+
     @media (max-width: 1024px) {
         #main-dashboard { flex-direction: column; height: auto; overflow: visible; padding-bottom: 50px; }
-        .ops-panel { width: 100%; }
+        .ops-panel { width: 100%; flex-direction: column; } /* 세로 정렬로 복귀 */
         .char-grid { grid-template-columns: repeat(2, 1fr); height: auto; }
         .char-card { height: 250px; }
         .top-ticker { height: 40px; }
@@ -495,9 +555,9 @@
     </div>
 
     <div id="start-screen">
-        <div style="text-align:center;">
+        <div style="text-align:center; background: rgba(0,0,0,0.5); padding: 40px; border: 1px solid #333; backdrop-filter: blur(5px);">
             <div style="font-size:5rem; font-weight:800; color:var(--primary); letter-spacing:10px; text-shadow:2px 2px 0 var(--alert);">S.R.H.Q</div>
-            <p style="color:#666; letter-spacing:3px;">SPECIAL RESPONSE HEADQUARTERS</p>
+            <p style="color:#aaa; letter-spacing:3px;">SPECIAL RESPONSE HEADQUARTERS</p>
             <div style="width:300px; height:4px; background:#111; margin:30px auto; position:relative;">
                 <div id="boot-bar" style="height:100%; background:var(--primary); width:0%; transition:width 0.1s;"></div>
             </div>
@@ -505,7 +565,7 @@
                 <button id="btn-init">SYSTEM CONNECT</button>
                 <p id="earphone-notice" style="color:#888; font-size:0.8rem; margin-top:20px; font-family: 'Noto Sans KR', sans-serif;">음성과 BGM이 포함되어 있습니다. 이어폰/헤드폰 사용을 권장합니다.</p>
             </div>
-            <p id="boot-text" style="color:#444; font-family:monospace; font-size:0.8rem; margin-top:10px;">INITIALIZING...</p>
+            <p id="boot-text" style="color:#666; font-family:monospace; font-size:0.8rem; margin-top:10px;">INITIALIZING...</p>
         </div>
     </div>
 
@@ -573,6 +633,7 @@
 
     <div id="main-dashboard" class="hidden">
         
+        <!-- ★★★ 변경된 부분: 상단 가로 패널 -->
         <div class="ops-panel">
             <div class="panel-box">
                 <div class="panel-title">
@@ -586,7 +647,7 @@
 
             <div class="panel-box">
                 <div class="panel-title">
-                    <span>TACTICAL MAP</span>
+                    <span>AREA INFO</span>
                     <span style="font-size:0.7rem;">TOKYO, 2026</span>
                 </div>
                 <ul class="loc-list">
@@ -619,12 +680,28 @@
                 </div>
             </div>
 
-            <div class="panel-box" style="flex:1; display:flex; flex-direction:column;">
+            <div class="panel-box" style="display:flex; flex-direction:column;">
                 <div class="panel-title">SYSTEM LOGS</div>
                 <div id="sys-log" class="log-window"></div>
             </div>
         </div>
 
+        <!-- ★★★ 추가된 부분: 전술 지도 섹션 ★★★ -->
+        <div id="tactical-map-section">
+             <div class="grid-header">
+                <div>
+                    <div class="grid-title">TACTICAL MAP</div>
+                    <div style="font-size:0.8rem; color:#666;">GREATER TOKYO AREA</div>
+                </div>
+            </div>
+            <div id="tactical-map-container">
+                <!-- 지도 이미지와 레이더 효과가 여기에 들어갑니다 -->
+                <img id="custom-map-img" src="https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/tokyomap.png" alt="Tactical Map">
+                <div class="radar-sweep-effect"></div>
+            </div>
+        </div>
+
+        <!-- ★★★ 기존 캐릭터 섹션은 그대로 유지 -->
         <div class="squad-section">
             <div class="grid-header">
                 <div>
@@ -779,7 +856,7 @@
                 pers: "단세포 본능파. 전직 폭주족 총장. 싸움과 고기 외엔 관심 없다.", 
                 ability: "[푸른 화염] 제어 불가능한 고열의 푸른 불꽃", 
                 tmi: "Like: 야키니쿠, 바이크 / Hate: 채소, 유령 / 🔒", 
-                story: `“복잡한 건 딱 질색이야. 화끈하게 전부 태워버리고 고기나 먹으러 가자고!”\n\n오사카의 밤거리를 지배하던 폭주족 총장, 붉은 머리의 야수가 전장을 달린다. 그에게 세상은 복잡한 논리가 아닌, '내 편'과 '적'으로 나뉘는 단순한 곳이다. 제어할 수 없을 만큼 뜨거운 푸른 화염은 닿는 모든 것을 재로 만들지만, 그만큼 순수한 열정이기도 하다.\n\n머리 쓰는 일은 질색이라며 투덜대면서도, 한번 인정한 상대에게는 뒤도 돌아보지 않고 등을 맡긴다. 굉음과 열기, 그리고 피 냄새가 진동하는 전장은 이제 그가 마음껏 날뛸 수 있는 유일한 놀이터가 되었다.`,
+                story: `“아, 복잡은 거 딱 질색이다! 화끈하게 다 태아뿌고 고기나 묵으러 가자!”\n\n오사카의 밤거리를 지배하던 폭주족 총장, 붉은 머리의 야수가 전장을 달린다. 그에게 세상은 복잡한 논리가 아닌, '내 편'과 '적'으로 나뉘는 단순한 곳이다. 제어할 수 없을 만큼 뜨거운 푸른 화염은 닿는 모든 것을 재로 만들지만, 그만큼 순수한 열정이기도 하다.\n\n머리 쓰는 일은 질색이라며 투덜대면서도, 한번 인정한 상대에게는 뒤도 돌아보지 않고 등을 맡긴다. 굉음과 열기, 그리고 피 냄새가 진동하는 전장은 이제 그가 마음껏 날뛸 수 있는 유일한 놀이터가 되었다.`,
                 images: Array(5).fill("https://via.placeholder.com/400/311/fff?text=LEO"), 
                 voices: [
                     { line: "「아 씨, 몰라! 복잡한 얘기는 치아라! 누굴 조지면 되는 건데, 어?!」", url: "https://pub-3c8fae18419a4334951c13e85cb211b0.r2.dev/l11.mp3" },
@@ -1109,7 +1186,6 @@
             document.getElementById('dt-ability').innerText = c.ability;
             document.getElementById('dt-tmi').innerText = c.tmi;
 
-            // ★★★ 수정됨: 스토리 스포일러 처리 로직 ★★★
             const storyBox = document.getElementById('dt-story');
             storyBox.classList.remove('revealed');
             const storyParts = c.story.split('\n\n');
@@ -1154,16 +1230,15 @@
             document.getElementById('user-profile-modal').classList.add('hidden'); 
         }
         
-        // ★★★ 수정됨: 클립보드 복사 내용 변경 ★★★
         function copyUserInfo() { 
             playSound('click');
             const guidelines = `★나레이션/대사 출력 법칙 (절대 준수)★
--서술/행동/나레이션: text
+-서술/행동/나레이션: *text*
 -모든 등장인물(ⓤ는 제외)의 대사는 반드시 아래 형식을 따른다.
 -형식: 
 이름｜"일본어" 
-「자연스러운 한국어(표준어) 번역」
-※번역 예외: 레오→경상도 사투리 / "おやおや" → 이런, 저런, 호오? (절대 "어머어머" X)`;
+*「자연스러운 한국어(표준어) 번역」*
+※번역 예외: 레오→경상도 사투리 / "おや" → 이런, 저런, 호오? (절대 "어머" X)`;
 
             const userInfo = `#${userData.name}
 -나이: ${userData.age}
